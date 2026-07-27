@@ -1,4 +1,30 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
 import routes from "./routes.js";
-const app=express(); app.use(cors()); app.use(express.json()); app.get("/health",(req,res)=>res.json({service:"equipment-service",status:"UP"})); app.use("/api/equipments",routes); app.listen(4002,()=>console.log("equipment-service sur le port 4002"));
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.get("/health", (req, res) => res.json({ service: "equipment-service", status: "UP" }));
+app.use("/api/equipments", routes);
+
+app.use((err, req, res, next) => {
+  console.error(err.message);
+  res.status(err.status || 500).json({ message: err.message || "Erreur interne du serveur" });
+});
+
+const PORT = process.env.PORT || 4002;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/eventia_equipments";
+
+mongoose
+  .connect(MONGO_URI)
+  .then(() => {
+    app.listen(PORT, () => console.log(`equipment-service sur le port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error("Erreur de connexion MongoDB :", err.message);
+    process.exit(1);
+  });

@@ -1,18 +1,25 @@
 /**
  * Représente un matériel disponible à la location.
- *
- * Cette classe doit regrouper les informations commerciales et de stock d’un
- * article loué par Eventia Location. Elle porte aussi les règles permettant
- * de vérifier la cohérence d’un matériel et de déterminer si une quantité
- * demandée peut être réservée.
- *
- * Travail demandé :
- * - déduire les données nécessaires à partir du dialogue et des contrats REST;
- * - convertir les valeurs numériques lorsque cela est nécessaire;
- * - vérifier la validité générale d’un matériel;
- * - vérifier si le stock permet une réservation donnée.
- *
- * Ne placez ici aucune logique MongoDB, Express ou Axios.
  */
 export default class Equipment {
+  constructor({ id, name, category, dailyPrice, availableQuantity } = {}) {
+    this.id = id;
+    this.name = typeof name === "string" ? name.trim() : name;
+    this.category = typeof category === "string" ? category.trim() : category;
+    this.dailyPrice = Number(dailyPrice);
+    this.availableQuantity = Number(availableQuantity);
+  }
+
+  isValid() {
+    const hasName = typeof this.name === "string" && this.name.length > 0;
+    const hasCategory = typeof this.category === "string" && this.category.length > 0;
+    const validPrice = Number.isFinite(this.dailyPrice) && this.dailyPrice >= 0;
+    const validQuantity =
+      Number.isInteger(this.availableQuantity) && this.availableQuantity >= 0;
+    return hasName && hasCategory && validPrice && validQuantity;
+  }
+
+  hasEnoughStock(quantity) {
+    return Number.isInteger(quantity) && quantity >= 1 && this.availableQuantity >= quantity;
+  }
 }
