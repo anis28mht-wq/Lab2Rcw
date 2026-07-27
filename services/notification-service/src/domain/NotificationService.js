@@ -1,17 +1,32 @@
+import Notification from "./Notification.js";
+
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
 /**
  * Contient la logique applicative du service des notifications.
- *
- * Cette classe est utilisée par les routes REST pour consulter l’historique ou
- * créer une notification. Elle doit construire une entité Notification,
- * vérifier sa validité, puis demander au dépôt de l’enregistrer.
- *
- * Travail demandé :
- * - recevoir le dépôt de notifications;
- * - fournir les opérations attendues par les routes;
- * - valider une notification avant sa persistance;
- * - signaler une notification incomplète ou invalide.
- *
- * Cette classe ne doit pas manipuler directement Express ou Mongoose.
  */
 export default class NotificationService {
+  constructor(repository) {
+    this.repository = repository;
+  }
+
+  async getAll() {
+    return this.repository.findAll();
+  }
+
+  async create(data) {
+    const notification = new Notification(data);
+    if (!notification.isValid()) {
+      throw httpError(400, "Destinataire, message et type sont requis");
+    }
+    return this.repository.create({
+      recipient: notification.recipient,
+      message: notification.message,
+      type: notification.type,
+    });
+  }
 }

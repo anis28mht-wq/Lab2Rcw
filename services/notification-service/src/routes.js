@@ -1,5 +1,26 @@
 import { Router } from "express";
-const router=Router();
-const todo=(req,res)=>res.status(501).json({message:"À implémenter par les étudiants"});
-router.get("/",todo); router.get("/:id",todo); router.post("/",todo); router.put("/:id",todo); router.patch("/:id/cancel",todo); router.delete("/:id",todo);
+import NotificationModel from "./models/notificationModel.js";
+import NotificationRepository from "./domain/NotificationRepository.js";
+import NotificationService from "./domain/NotificationService.js";
+
+const router = Router();
+const repository = new NotificationRepository(NotificationModel);
+const service = new NotificationService(repository);
+
+router.get("/", async (req, res, next) => {
+  try {
+    res.status(200).json(await service.getAll());
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    res.status(201).json(await service.create(req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
