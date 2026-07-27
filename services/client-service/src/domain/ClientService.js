@@ -1,18 +1,71 @@
+import Client from "./Client.js";
+
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
 /**
  * Contient la logique applicative du service des clients.
- *
- * Cette classe constitue l’intermédiaire entre les routes REST, l’entité
- * Client et le dépôt de clients. Elle doit appliquer les règles métier avant
- * de demander au dépôt de lire ou de modifier les données.
- *
- * Travail demandé :
- * - recevoir le dépôt nécessaire à son fonctionnement;
- * - offrir les opérations correspondant aux cas d’utilisation du service;
- * - créer et valider l’entité appropriée avant un enregistrement;
- * - déléguer la persistance au dépôt;
- * - signaler clairement les données invalides.
- *
- * Cette classe ne doit pas utiliser directement Express ni Mongoose.
  */
 export default class ClientService {
+  constructor(repository) {
+    this.repository = repository;
+  }
+
+  async getAll() {
+    return this.repository.findAll();
+  }
+
+  async getById(id) {
+    const client = await this.repository.findById(id);
+    if (!client) {
+      throw httpError(404, "Client introuvable");
+    }
+    return client;
+  }
+
+  async create(data) {
+    const client = new Client(data);
+    if (!client.isValid()) {
+      throw httpError(400, "Nom, courriel et téléphone sont requis et le courriel doit être valide");
+    }
+
+    const emailTaken = await this.repository.existsByEmail(client.email);
+    if (emailTaken) {
+      throw httpError(409, "Un client utilise déjà ce courriel");
+    }
+
+    return this.repository.create({
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+    });
+  }
+
+  async update(id, data) {
+    await this.getById(id); // lève 404 si absent
+
+    const client = new Client(data);
+    if (!client.isValid()) {
+      throw httpError(400, "Nom, courriel et téléphone sont requis et le courriel doit être valide");
+    }
+
+    const emailTaken = await this.repository.existsByEmail(client.email, id);
+    if (emailTaken) {
+      throw httpError(409, "Un client utilise déjà ce courriel");
+    }
+
+    return this.repository.update(id, {
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+    });
+  }
+
+  async delete(id) {
+    await this.getById(id); // lève 404 si absent
+    return this.repository.delete(id);
+  }
 }
